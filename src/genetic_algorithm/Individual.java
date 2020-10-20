@@ -4,6 +4,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+// Classe para representar um indivíduo
 public class Individual {
     private final List<Integer> cities;
     private double fitness;
@@ -18,18 +19,15 @@ public class Individual {
     }
 
     public void mutate() {
-        Random random = new Random();
-
         for (int i = 0; i < cities.size(); i++) {
-            if (Math.random() < Settings.MUTATION_RATE) {
-                int otherCityIndex = random.nextInt(cities.size());
-                Collections.swap(cities, i, otherCityIndex);
+            if (Math.random() < Settings.MUTATION_RATE_CITY) {
+                Collections.swap(cities, i, (i + 1) % cities.size());
             }
         }
     }
 
     public void computeFitness(DistanceMatrix distanceMatrix) {
-        int distance = 0;
+        double distance = 0;
 
         for (int i = 0; i < cities.size() - 1; i++) {
             distance += distanceMatrix.getDistanceBetweenCities(cities.get(i), cities.get(i + 1));
@@ -53,8 +51,14 @@ public class Individual {
         return fitness;
     }
 
+    // Realiza o "cruzamento", sem que a cidade se repita para o mesmo indivíduo
     private static Individual orderedCrossover(Individual parent1, Individual parent2) {
         List<Integer> cities = new ArrayList<>();
+
+        // Foi utilizado um HashMap para otimizar o tempo de verificação se uma cidade já está presente no indivíduo.
+        // Sem o HashMap, a maior parte do tempo de execução do algoritmo estava sendo gasta verificando se a cidade já
+        // estava presente no indivíduo (log(N)).
+        HashMap<Integer, Boolean> alreadyUsedCities = new HashMap<>();
 
         Random random = new Random();
 
@@ -66,10 +70,11 @@ public class Individual {
 
         for (int i = startIndex; i < endIndex; i++) {
             cities.add(parent1.getCities().get(i));
+            alreadyUsedCities.put(parent1.getCities().get(i), true);
         }
 
         for (Integer city : parent2.getCities()) {
-            if (!cities.contains(city))
+            if (!alreadyUsedCities.containsKey(city))
                 cities.add(city);
         }
 
